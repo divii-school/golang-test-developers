@@ -5,7 +5,6 @@
 package worker
 
 import (
-	"bank-api/internal/storage"
 	"context"
 	"log/slog"
 	"time"
@@ -15,14 +14,20 @@ type Job struct {
 	TransferID int64
 }
 
+// Settler executes a queued transfer. *storage.TransferStore satisfies it;
+// tests substitute a fake so the worker can be exercised without a database.
+type Settler interface {
+	Execute(ctx context.Context, transferID int64) error
+}
+
 type Worker struct {
-	store *storage.TransferStore
+	store Settler
 	log   *slog.Logger
 	jobs  chan Job
 	done  chan struct{}
 }
 
-func New(store *storage.TransferStore, log *slog.Logger) *Worker {
+func New(store Settler, log *slog.Logger) *Worker {
 	return &Worker{
 		store: store,
 		log:   log,
